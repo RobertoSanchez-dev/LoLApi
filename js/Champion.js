@@ -1,4 +1,4 @@
-export default class Champion {
+class Champion {
   constructor(data) {
     this.name = data.name;
     this.title = data.title;
@@ -6,6 +6,8 @@ export default class Champion {
     this.image = data.image;
     this.lore = data.blurb;
     this.stats = data.stats;
-    this.tag = data.tags
+    this.tags = data.tags;
   }
 }
+
+export default Champion;

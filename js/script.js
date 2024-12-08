@@ -1,27 +1,32 @@
 import Champion from "./Champion.js";
 
+// Variables globales y elementos del DOM
 const champions = [];
 const showChampsButton = document.getElementById("showChamps");
 const toggleInfoButton = document.getElementById("toggleInfo");
 const championPoolContainer = document.querySelector("#championPool");
 const searchInput = document.getElementById("searchInput");
 const searchResults = document.getElementById("searchResults");
-
+const tagCheckboxes = document.querySelectorAll(".tag-checkbox");
 const modalElement = document.getElementById("championModal");
+let isInfoVisible = false;
+let champsAreVisible = false;
+let debounceTimer = null;
+
+
+// Configuración del modal
 modalElement.addEventListener("hidden.bs.modal", function () {
   const modalContent = document.getElementById("championModalContent");
   modalContent.innerHTML = "";
 });
 
-let isInfoVisible = false;
-let champsAreVisible = false;
-toggleInfoButton.disabled = true;
-let debounceTimer = null;
-
+// Función para obtener el pool de campeones
 const getChampionPool = async () => {
   try {
     if (champions.length > 0) return;
-    const response = await fetch("https://ddragon.leagueoflegends.com/cdn/14.23.1/data/en_US/champion.json");
+    const response = await fetch(
+      "https://ddragon.leagueoflegends.com/cdn/14.23.1/data/en_US/champion.json"
+    );
     const result = await response.json();
     const championData = result.data;
 
@@ -36,12 +41,15 @@ const getChampionPool = async () => {
   }
 };
 
+// Función para mostrar el pool de campeones
 const showChamps = () => {
   championPoolContainer.innerHTML = "";
   const row = document.createElement("div");
-  row.className = "row row-cols-1 row-cols-sm-2 row-cols-md-6 row-cols-lg-6 g-6 mb-4";
+  row.className =
+    "row row-cols-1 row-cols-sm-2 row-cols-md-6 row-cols-lg-6 g-6 mb-4";
 
   champions.forEach((champ) => {
+
     const col = document.createElement("div");
     col.className = "col mb-2";
     const card = document.createElement("div");
@@ -64,20 +72,17 @@ const showChamps = () => {
   toggleInfoButton.disabled = false;
 };
 
-toggleInfoButton.addEventListener("click", () => {
+// Mostrar u ocultar información adicional
+const toggleCardInfo = () => {
   const cardBodies = document.querySelectorAll(".card-body");
   isInfoVisible = !isInfoVisible;
 
   cardBodies.forEach((body) => {
     body.classList.toggle("d-none", !isInfoVisible);
   });
-});
+};
 
-showChampsButton.addEventListener("click", async () => {
-  await getChampionPool();
-  showChamps();
-});
-
+// Filtrar campeones por búsqueda
 const filterChampions = (query) => {
   const results = champions.filter((champ) =>
     champ.name.toLowerCase().includes(query.toLowerCase())
@@ -85,6 +90,7 @@ const filterChampions = (query) => {
   showSearchResults(results);
 };
 
+// Mostrar resultados de búsqueda
 const showSearchResults = (results) => {
   searchResults.innerHTML = "";
   if (results.length > 0) {
@@ -105,6 +111,7 @@ const showSearchResults = (results) => {
   }
 };
 
+// Mostrar modal con detalles del campeón
 const showChampionModal = (champ) => {
   const modalContent = document.getElementById("championModalContent");
   modalContent.innerHTML = `
@@ -112,36 +119,68 @@ const showChampionModal = (champ) => {
     <h5>${champ.name}</h5>
     <p><strong>Título:</strong> ${champ.title}</p>
     <p><strong>Historia:</strong> ${champ.lore}</p>
-    <button id="showMoreInfo" class="btn btn-outline-dark">Mostrar estadísticas</button>
+    <h6 class="mt-3">Estadísticas Base:</h6>
+    <ul>
+      <li>Vida: ${champ.stats.hp}</li>
+      <li>Mana: ${champ.stats.mp}</li>
+      <li>Daño de ataque: ${champ.stats.attackdamage}</li>
+      <li>Velocidad de ataque: ${champ.stats.attackspeed}</li>
+      <li>Velocidad de movimiento: ${champ.stats.movespeed}</li>
+    </ul>
   `;
-
-  const showMoreInfoButton = document.getElementById("showMoreInfo");
-
-  showMoreInfoButton.addEventListener("click", () => {
-    modalContent.innerHTML = `
-      <h5>${champ.name}</h5>
-      <p><strong>Título:</strong> ${champ.title}</p>
-      <p><strong>Historia:</strong> ${champ.lore}</p>
-      <h6 class="mt-3">Estadísticas Base:</h6>
-      <ul>
-        <li>Vida: ${champ.stats.hp}</li>
-        <li>Mana: ${champ.stats.mp}</li>
-        <li>Daño de ataque: ${champ.stats.attackdamage}</li>
-        <li>Velocidad de ataque: ${champ.stats.attackspeed}</li>
-        <li>Velocidad de movimiento: ${champ.stats.movespeed}</li>
-      </ul>
-      <button id="hideMoreInfo" class="btn btn-outline-dark mt-3">Ocultar estadísticas</button>
-    `;
-
-    const hideMoreInfoButton = document.getElementById("hideMoreInfo");
-    hideMoreInfoButton.addEventListener("click", () => {
-      showChampionModal(champ);
-    });
-  });
 
   const myModal = new bootstrap.Modal(document.getElementById("championModal"));
   myModal.show();
 };
+
+const renderChampionCards = (championsToRender) => {
+  championPoolContainer.innerHTML = ""; // Limpiar el contenedor actual
+  const row = document.createElement("div");
+  row.className =
+    "row row-cols-1 row-cols-sm-2 row-cols-md-6 row-cols-lg-6 g-6 mb-4";
+
+  championsToRender.forEach((champ) => {
+    const col = document.createElement("div");
+    col.className = "col mb-2";
+    const card = document.createElement("div");
+    card.className = "card h-100 text-center";
+    card.innerHTML = `
+      <img src="https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/${champ.image.full}" class="card-img-top" alt="${champ.name}">
+      <div class="card-body bg-dark text-light">
+        <h5 class="card-title">${champ.name}</h5>
+        <p class="card-text">${champ.title}</p>
+        <p class="card-text">${champ.lore}</p>
+      </div>
+    `;
+    col.appendChild(card);
+    row.appendChild(col);
+  });
+
+  championPoolContainer.appendChild(row);
+};
+
+document.querySelectorAll(".tag-checkbox").forEach((checkbox) => {
+  checkbox.addEventListener("change", updateChampionCards);
+});
+
+function updateChampionCards() {
+  const selectedTags = Array.from(document.querySelectorAll(".tag-checkbox:checked"))
+    .map((checkbox) => checkbox.value);
+
+  const filteredChampions = champions.filter((champion) =>
+    selectedTags.every((tag) => champion.tags.includes(tag))
+  );
+
+  renderChampionCards(filteredChampions);
+}
+
+// Event listeners
+toggleInfoButton.addEventListener("click", toggleCardInfo);
+
+showChampsButton.addEventListener("click", async () => {
+  await getChampionPool();
+  showChamps();
+});
 
 searchInput.addEventListener("input", () => {
   clearTimeout(debounceTimer);
@@ -156,50 +195,12 @@ searchInput.addEventListener("input", () => {
   }
 });
 
-const updateChampionCards = () => {
-  const selectedTags = Array.from(document.querySelectorAll(".tag-checkbox:checked")).map((checkbox) => checkbox.value);
-
-  const filteredChampions = champions.filter((champ) =>
-    selectedTags.length === 0 || champ.tag.some((tag) => selectedTags.includes(tag))
-  );
-
-  championPoolContainer.innerHTML = "";
-  const row = document.createElement("div");
-  row.className = "row row-cols-1 row-cols-sm-2 row-cols-md-6 row-cols-lg-6 g-6 mb-3";
-
-  filteredChampions.forEach((champ) => {
-    const col = document.createElement("div");
-    col.className = "col";
-    const card = document.createElement("div");
-    card.className = "card h-100 text-center";
-    card.innerHTML = `
-      <img src="https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/${champ.image.full}" class="card-img-top" alt="${champ.name}">
-      <div class="card-body bg-dark text-light">
-        <h5 class="card-title">${champ.name}</h5>
-        <p class="card-text">${champ.title}</p>
-        <p class="card-text">${champ.lore}</p>
-        <button id="hideMoreInfo" class="btn btn-outline-light" >Ver más</button>
-      </div>
-    `;
-    col.appendChild(card);
-    row.appendChild(col);
+document.addEventListener("DOMContentLoaded", () => {
+  // Añadir evento a los checkboxes
+  document.querySelectorAll(".tag-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", updateChampionCards);
   });
 
-  championPoolContainer.appendChild(row);
-
-  const viewMoreButtons = row.querySelectorAll(".btn-outline-light");
-  viewMoreButtons.forEach((button) => {
-    button.addEventListener("click", (event) => {
-      const championId = event.target.getAttribute("data-champion-id");
-      const selectedChampion = champions.find((champ) => champ.id == championId);
-      showChampionModal(selectedChampion);
-    });
-  });
-};
-
-const tagCheckboxes = document.querySelectorAll(".tag-checkbox");
-tagCheckboxes.forEach((checkbox) => {
-  checkbox.addEventListener("change", updateChampionCards);
+  // Mostrar los campeones al cargar la página
+  updateChampionCards();
 });
-
-updateChampionCards();
